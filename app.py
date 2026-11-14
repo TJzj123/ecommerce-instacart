@@ -16,11 +16,8 @@ def load_data():
     df_merge = pd.merge(df_merge, products, on="product_id", how="inner")
 
     np.random.seed(42)
-    dept_price_map = {
-        "bakery":4.5, "beverages":3.2, "snacks":2.8, "frozen":5,
         "dairy eggs":3.8, "produce":2.2, "meat seafood":8, "pantry":4
     }
-    df_merge["price_base"] = df_merge["department"].map(dept_price_map)
     df_merge["product_price"] = df_merge["price_base"] * np.random.uniform(0.7,1.4,size=len(df_merge))
     df_merge["item_total"] = df_merge["product_price"]
 
@@ -28,9 +25,9 @@ def load_data():
         order_amount = ("item_total","sum"),
         user_id = ("user_id","first")
     ).reset_index()
-    return df_merge, order_total, orders
+    return df_merge
 
-df_merge, order_total, orders = load_data()
+df_merge = load_data()
 
 total_sales = order_total["order_amount"].sum()
 total_order_cnt = order_total["order_id"].nunique()

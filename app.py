@@ -14,7 +14,6 @@ def load_data():
 
     df_merge = pd.merge(order_products, orders, on="order_id", how="inner")
     df_merge = pd.merge(df_merge, products, on="product_id", how="inner")
-
     df_merge = df_merge.dropna(subset=["days_since_prior_order"])
     return df_merge
 
@@ -37,13 +36,13 @@ col1.metric("订单总数", filter_df["order_id"].nunique())
 col2.metric("商品购买总量", len(filter_df))
 col3.metric("用户数", filter_df["user_id"].nunique())
 
-# 星期订单分布
+# 各星期订单数量
 fig1 = px.histogram(filter_df, x="order_dow", title="各星期订单数量", labels={"order_dow": "星期"})
-st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(fig1, width="100%")
 
-# 小时订单分布
-fig2 = px.histogram(filter_df, x="order_hour_of_day", title="各时段订单数量", labels={"order_hour_of_day": "小时"})
-st.plotly_chart(fig2, use_container_width=True)
+# 各时段订单数量
+fig2 = px.histogram(filter_df, x="order_hour_of_day", title="各时段订单数量", labels={"order_hour_of_day": "下单小时"})
+st.plotly_chart(fig2, width="100%")
 
 # 复购间隔分布
 fig3 = px.histogram(
@@ -52,4 +51,4 @@ fig3 = px.histogram(
     title="两次下单间隔天数",
     labels={"days_since_prior_order": "间隔天数"}
 )
-st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(fig3, width="100%")

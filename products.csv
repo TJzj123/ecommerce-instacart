@@ -1,0 +1,8 @@
+product_id,product_name,aisle_id,department_id
+1,Milk,83,16
+2,Banana,24,4
+3,Strawberry,24,4
+4,Yogurt,83,16
+5,Avocado,24,4
+6,Bread,112,3
+7,Cheese,83,16

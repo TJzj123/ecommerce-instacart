@@ -8,9 +8,9 @@ st.title("🛒 Instacart电商销售与转化率可视化")
 
 @st.cache_data
 def load_data():
-    orders = pd.read_csv("orders_sample.csv")
-    order_products = pd.read_csv("order_products__prior_sample.csv")
-    products = pd.read_csv("products_sample.csv")
+    orders = pd.read_csv("orders.csv")
+    order_products = pd.read_csv("order_products.csv")
+    products = pd.read_csv("products.csv")
     orders = orders.dropna(subset=["days_since_prior_order"])
     df_merge = pd.merge(order_products, orders, on="order_id", how="inner")
     df_merge = pd.merge(df_merge, products, on="product_id", how="inner")

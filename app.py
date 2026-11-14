@@ -11,73 +11,45 @@ def load_data():
     orders = pd.read_csv("orders.csv")
     order_products = pd.read_csv("order_products.csv")
     products = pd.read_csv("products.csv")
-    orders = orders.dropna(subset=["days_since_prior_order"])
+
     df_merge = pd.merge(order_products, orders, on="order_id", how="inner")
     df_merge = pd.merge(df_merge, products, on="product_id", how="inner")
 
-    np.random.seed(42)
-        "dairy eggs":3.8, "produce":2.2, "meat seafood":8, "pantry":4
-    }
-    df_merge["product_price"] = df_merge["price_base"] * np.random.uniform(0.7,1.4,size=len(df_merge))
-    df_merge["item_total"] = df_merge["product_price"]
-
-    order_total = df_merge.groupby("order_id").agg(
-        order_amount = ("item_total","sum"),
-        user_id = ("user_id","first")
-    ).reset_index()
+    df_merge = df_merge.dropna(subset=["days_since_prior_order"])
     return df_merge
 
 df_merge = load_data()
 
-total_sales = order_total["order_amount"].sum()
-total_order_cnt = order_total["order_id"].nunique()
-avg_order_value = total_sales / total_order_cnt
-user_reorder = df_merge.groupby("user_id")["reordered"].max()
-reorder_rate = user_reorder.mean()
+# 侧边栏筛选
+st.sidebar.header("筛选条件")
+weekday = st.sidebar.multiselect("下单星期", sorted(df_merge["order_dow"].unique()), default=sorted(df_merge["order_dow"].unique()))
+hour_range = st.sidebar.slider("下单小时", 0, 23, (0, 23))
 
+filter_df = df_merge[
+    (df_merge["order_dow"].isin(weekday)) &
+    (df_merge["order_hour_of_day"] >= hour_range[0]) &
+    (df_merge["order_hour_of_day"] <= hour_range[1])
+]
+
+# 指标卡片
 col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric(label="总销售额", value=f"{total_sales:,.2f} $")
-with col2:
-    st.metric(label="平均客单价", value=f"{avg_order_value:.2f} $")
-with col3:
-    st.metric(label="用户复购率", value=f"{reorder_rate:.1%}")
+col1.metric("订单总数", filter_df["order_id"].nunique())
+col2.metric("商品购买总量", len(filter_df))
+col3.metric("用户数", filter_df["user_id"].nunique())
 
-st.divider()
+# 星期订单分布
+fig1 = px.histogram(filter_df, x="order_dow", title="各星期订单数量", labels={"order_dow": "星期"})
+st.plotly_chart(fig1, use_container_width=True)
 
-row1_col1, row1_col2 = st.columns(2)
-with row1_col1:
-    dept_price = df_merge[["department","product_price"]].drop_duplicates(subset="product_id")
-    fig_box = px.box(dept_price, x="department", y="product_price", title="各商品类别价格分布箱线图")
-    st.plotly_chart(fig_box, use_container_width=True)
+# 小时订单分布
+fig2 = px.histogram(filter_df, x="order_hour_of_day", title="各时段订单数量", labels={"order_hour_of_day": "小时"})
+st.plotly_chart(fig2, use_container_width=True)
 
-with row1_col2:
-    funnel_data = pd.DataFrame({
-        "stage":["浏览","加入购物车","下单支付","复购"],
-        "count":[10000,4200,2100,950]
-    })
-    fig_funnel = px.funnel(funnel_data, x="count", y="stage", title="用户转化漏斗路径")
-    st.plotly_chart(fig_funnel, use_container_width=True)
-
-row2_col1, row2_col2 = st.columns(2)
-with row2_col1:
-    daily_sale = pd.merge(order_total, orders[["order_id","order_dow"]], on="order_id")
-    daily_sale = daily_sale.groupby("order_dow")["order_amount"].sum().reset_index()
-    fig_sale = px.line(daily_sale, x="order_dow", y="order_amount", title="星期维度销售额趋势", markers=True)
-    st.plotly_chart(fig_sale, use_container_width=True)
-
-with row2_col2:
-    top_depts = df_merge["department"].value_counts().head(8).index.tolist()
-    df_top = df_merge[df_merge["department"].isin(top_depts)]
-    order_dept = df_top.groupby("order_id")["department"].apply(set)
-    mat = pd.DataFrame(np.zeros((len(top_depts),len(top_depts))), index=top_depts, columns=top_depts)
-    for s in order_dept:
-        lst = list(s)
-        for i in lst:
-            for j in lst:
-                mat.loc[i,j] +=1
-    fig_hm = px.imshow(mat, title="商品类别共同购买热力图", text_auto=".0f")
-    st.plotly_chart(fig_hm, use_container_width=True)
-
-st.markdown("### 📊说明")
-st.markdown("原始数据集无商品价格，基于品类模拟单价；无浏览行为，漏斗数据为模拟演示。")
+# 复购间隔分布
+fig3 = px.histogram(
+    filter_df.drop_duplicates("order_id"),
+    x="days_since_prior_order",
+    title="两次下单间隔天数",
+    labels={"days_since_prior_order": "间隔天数"}
+)
+st.plotly_chart(fig3, use_container_width=True)
